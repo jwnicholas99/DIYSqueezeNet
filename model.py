@@ -15,8 +15,15 @@ class SqueezeNet(tf.keras.Model):
         # Initialize hyperparameters
         self.batch_size = 32
         self.num_classes = num_classes
-        self.learning_rate = 1e-3
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+
+        start_learning_rate = 0.04
+        end_learning_rate = 0.00001
+        num_steps = 10000
+        self.learning_rate_fn = keras.optimizers.schedules.PolynomialDecay(start_learning_rate,
+                                                                      10000,
+                                                                      end_learning_rate,
+                                                                      power=1.0)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate_fn)
 
         # Initialize learnable parameters
         self.conv1 = keras.layers.Convolution2D(96, (7,7), activation='relu',
