@@ -2,7 +2,7 @@ import os
 import argparse
 import zipfile
 import tensorflow as tf
-#import tensorflow_model_optimization as tfmot
+import tensorflow_model_optimization as tfmot
 
 from model import SqueezeNet
 
