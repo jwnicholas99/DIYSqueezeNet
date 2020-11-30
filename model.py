@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tf.keras as keras
+import tensorflow.keras as keras
 
 from fire_mod import FireLayer
 
@@ -10,7 +10,7 @@ class SqueezeNet(tf.keras.Model):
         of the SqueezeNet model.
         :param num_classes: number of classes for images
         """
-        super(Model, self).__init__()
+        super(SqueezeNet, self).__init__()
 
         # Initialize hyperparameters
         self.batch_size = 32
@@ -51,7 +51,7 @@ class SqueezeNet(tf.keras.Model):
         self.global_avgpool10 = keras.layers.GlobalAveragePooling2D()
         self.softmax = keras.layers.Activation('softmax')
 
-    def call(self, inputs)
+    def call(self, inputs):
         conv1 = self.conv1(inputs)
         maxpool1 = self.maxpool1(conv1)
 

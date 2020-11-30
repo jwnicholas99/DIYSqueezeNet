@@ -3,7 +3,7 @@ import tensorflow as tf
 from preprocess import get_data
 from model import SqueezeNet
 
-def train(model, inputs, labels):
+def train(model, train_data):
     '''
     Trains the model on all of the inputs and labels for one epoch. Images are 
     shuffled. Images should already have been randomnly transformed in get_data()
@@ -13,14 +13,13 @@ def train(model, inputs, labels):
     :param labels: train labels (all labels to use for training), 
     shape (num_labels, num_classes)
     '''
-    indices = tf.random.shuffle(tf.range(len(labels)))
-    inputs = tf.gather(inputs, indices)
-    labels = tf.gather(labels, indices)
+    train_data = train_data.shuffle(1281167)
+    #train_data = train_data.map(tf.image.random_flip_left_right)
+    #train_data = train_data.map(tf.image.random_flip_up_down)
 
-    for start in range(0, len(labels), model.batch_size):
-        end = start + model.batch_size
-        batch_x = inputs[start:end]
-        batch_y = labels[start:end]
+    for batch in train_data:
+        batch_x = batch[0]
+        batch_y = batch[1]
 
         with tf.GradientTape() as tape:
             probs = model.call(batch_x)
@@ -30,7 +29,7 @@ def train(model, inputs, labels):
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     return
 
-def test(model, inputs, labels):
+def test(model, test_data):
     """
     Tests the model on the test inputs and labels. 
     :param model: SqueezeNet model to run
@@ -42,29 +41,31 @@ def test(model, inputs, labels):
     """
     top1_num_corr = 0
     top5_num_corr = 0
+    label_length = tf.shape(test_data[1])[0]
 
-    for start in range(0, len(inputs), model.batch_size):
-        end = start + model.batch_size
-        batch_x = inputs[start:end]
-        batch_y = inputs[start:end]
+    for batch in test_data:
+        batch_x = batch[0]
+        batch_y = batch[1]
 
         probs = model.call(batch_x)
         top1_acc = model.top1_accuracy(probs, batch_y)
         top5_acc = model.top5_accuracy(probs, batch_y)
         top1_num_corr += top1_acc * len(batch_y)
         top5_num_corr += top5_acc * len(batch_y)
-    top1_acc = top1_num_corr / len(labels)
-    top5_acc = top5_num_corr / len(labels)
+    top1_acc = top1_num_corr / label_length
+    top5_acc = top5_num_corr / label_length
     return top1_acc, top5_acc
 
 def main():
-    train_inputs, train_labels, test_inputs, test_labels, num_classes = get_data()
+    train_data, test_data, num_classes = get_data('Imagenet8_train', 'Imagenet8_val')
 
     model = SqueezeNet(num_classes)
 
+    train_data = train_data.batch(model.batch_size)
+    test_data = test_data.batch(model.batch_size)
     for _ in range(10):
-        train(model, train_inputs, train_labels)
-        top1_acc, top5_acc = test(model, test_inputs, test_labels)
+        train(model, train_data)
+        top1_acc, top5_acc = test(model, test_data)
         print("Top 1 Accuracy: ", top1_acc)
         print("Top 5 Accuracy: ", top5_acc)
     return
