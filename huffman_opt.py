@@ -1,67 +1,54 @@
 # Note: Don't name the file huffman.py. It will break the import.
-# Recommend using dahuffman.
 
 import tensorflow as tf
 import numpy as np
 
-# Option 1: huffman
-# Results:
-#   - Size: 500 * 500 , Time: ~ 10-15 seconds
-#   - Size: 5000 * 5000 , Time: ~ 7.5 minutes
-def huffman_opt1(dim_size):
-    # pip install huffman
-    import huffman
-    import collections
+# pip install dahuffman
+from dahuffman import HuffmanCodec
 
-    # Get some sample weights
-    test_weights = tf.Variable(tf.random.truncated_normal([dim_size, dim_size], stddev=.1, dtype=tf.float32))
-
-    # Preprocessing weights
-    flattened_array = test_weights.numpy().flatten()
-    huffman_input = collections.Counter(flattened_array).items()
-
-    # Dictionary - { 'value' : bit-representation }
-    result = huffman.codebook(huffman_input)
-
-# Option 2: huffman
-# Results:
+# Performance on tensors:
 #   - Size: 500 * 500 , Time: ~ 8-10 seconds
 #   - Size: 5000 * 5000 , Time: ~ 23 minutes
-def huffman_opt2(dim_size):
-    # pip install dahuffman
-    from dahuffman import HuffmanCodec
 
-    # Get some sample weights
-    test_weights = tf.Variable(tf.random.truncated_normal([dim_size, dim_size], stddev=.1, dtype=tf.float32))
-
-    # Preprocessing weights
-    flattened_array = test_weights.numpy().flatten()
-
-    # Get dahuffman encoded object
+# Input: Tensor
+# Output: Encoded tensor, Codec
+def encode(weights):
+    assert(tf.is_tensor(weights))
+    flattened_array = weights.numpy().flatten()
     codec = HuffmanCodec.from_data(flattened_array)
+    return codec.encode(flattened_array), codec
 
-    # Get code table dictionary - { 'symbol' : (num_bits, value) }
-    results = codec.get_code_table()
+# Input: Encoded tensor, Codec, Optional: original shape of tensor
+# Output: Flattened array
+def decode(code, codec, shape=None):
+    assert(isinstance(code, bytes) and isinstance(codec, HuffmanCodec))
+    if shape is not None:
+        return np.reshape(codec.decode(code), shape)
+    else:
+        return codec.decode(code)
 
-    # Print properties of object
-    # codec.print_code_table()
-    print("Finished training codec on tensor of size: {} x {}".format(test_weights.shape[0], test_weights.shape[1]), flush=True)
+# Test Demo
+def demo():
+    print("-" * 30)
 
-    return test_weights, codec
+    # Test weights
+    test_weights = tf.Variable(tf.random.truncated_normal([500, 500], stddev=.1, dtype=tf.float32))
+    print("Testing on tensor of size {} x {}.".format(test_weights.shape[0], test_weights.shape[1]), flush=True)
 
-# huffman_opt1(500)
-test_weights, codec = huffman_opt2(500)
+    # Syntax for encoding
+    print("Encoding...", flush=True)
+    code, codec = encode(test_weights)
+    print("Successfully encoded tensor to {} bytes.".format(len(code)), flush=True)
 
-def huffman_opt2_demo(test_weights, codec):
-    # Encode the flattened numpy array - (Must be flattened)
-    code = codec.encode(test_weights.numpy().flatten())
-    print("Encoded weights. Length of code is: {}".format(len(code)), flush=True)
+    # Syntax for decoding
+    print("Decoding...", flush=True)
+    output_weights = decode(code, codec, shape=test_weights.shape)
+    print("Successfully decoded tensor into tensor of shape {} x {}.".format(output_weights.shape[0], output_weights.shape[1]), flush=True)
 
-    # Decode simply by feeding in the code into the codec
-    decode = codec.decode(code)
-    print("Check for equality: {}".format(np.all(decode == test_weights.numpy().flatten())), flush=True)
+    # Making sure the encode and decode did not alter tensor
+    equality_check = np.all(tf.equal(test_weights, output_weights))
+    print("Result of equality check: {}".format(equality_check), flush=True)
 
-huffman_opt2_demo(test_weights, codec)
+    print("-" * 30)
 
-# Sound to mark end of program
-print('\a')
+# demo()
