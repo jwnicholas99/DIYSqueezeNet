@@ -13,12 +13,14 @@ import tensorflow_model_optimization as tfmot
 def quantize(model, optimizer, loss, metrics,
              train_data=None, train_labels=None, subset_size=None,
              batch_size=500, epochs=1, validation_split=0.1):
+    # Make model quantization aware
     quantize_model = tfmot.quantization.keras.quantize_model
     q_aware_model = quantize_model(model)
     q_aware_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     # Retraining increases accuracy, but does not affect model size
     if train_data is not None and train_labels is not None:
+        # Default subset is 20%
         if subset_size is None:
             subset_size = round(0.2 * len(train_images))
         train_images_subset = train_data[0:subset_size]
@@ -26,12 +28,23 @@ def quantize(model, optimizer, loss, metrics,
         q_aware_model.fit(train_images_subset, train_labels_subset,
                           batch_size=batch_size, epochs=epochs, validation_split=validation_split)
 
+    # Make model quantized
     converter = tf.lite.TFLiteConverter.from_keras_model(q_aware_model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-
     quantized_tflite_model = converter.convert()
 
     return quantized_tflite_model
+
+# Save quantized model to file
+def save_model(quantized_tflite_model, file_path):
+    with open(file_path, 'wb') as f:
+        f.write(quantized_tflite_model)
+
+# Load quantized model as interpreter
+def load_model(file_path):
+    interpreter = tf.lite.Interpreter(model_path=file_path)
+    interpreter.allocate_tensors()
+    return interpreter
 
 # Display model sizes before and after quantization
 def display_diff(model, quantized_tflite_model):
@@ -55,7 +68,7 @@ def display_diff(model, quantized_tflite_model):
     print("Quantized model in Mb:", os.path.getsize(quant_file) / float(2**20))
     print("-" * 30)
 
-def demo():
+def demo(save):
     # Sample Model
     mnist = tf.keras.datasets.mnist
     (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
@@ -71,8 +84,8 @@ def demo():
     ])
 
     model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
     model.fit(train_images, train_labels, epochs=1, validation_split=0.1)
 
     # Quanitzation call
@@ -90,4 +103,21 @@ def demo():
     # Display model sizes
     display_diff(model, quantized_tflite_model)
 
-demo()
+    if save:
+        # Save model
+        save_model(quantized_tflite_model, 'model.tflite')
+
+def demo_interp():
+    # Load model
+    interpreter = load_model('model.tflite')
+
+    # See all the tensor layers
+    for x in enumerate(interpreter.get_tensor_details()):
+        print("[{}]: {}".format(x[0], x[1]), flush=True)
+
+    # Most important tensors for MNIST model
+    print(interpreter.get_tensor(0)) # Input Layer
+    print(interpreter.get_tensor(6)) # Quantized Layer
+
+# demo(True)
+# demo_interp()
