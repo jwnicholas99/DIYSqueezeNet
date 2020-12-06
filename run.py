@@ -18,8 +18,9 @@ def train(model, train_data):
     #train_data = train_data.map(tf.image.random_flip_up_down)
 
     for batch in train_data:
+        print(batch)
         batch_x = batch[0]
-        batch_y = batch[1]
+        batch_y = tf.cast(batch[1], tf.int32)
 
         with tf.GradientTape() as tape:
             probs = model.call(batch_x)
@@ -45,7 +46,7 @@ def test(model, test_data):
 
     for batch in test_data:
         batch_x = batch[0]
-        batch_y = batch[1]
+        batch_y = tf.cast(batch[1], tf.int32)
 
         probs = model.call(batch_x)
         top1_acc = model.top1_accuracy(probs, batch_y)
@@ -58,9 +59,7 @@ def test(model, test_data):
 
 def main():
     train_data, test_data, num_classes = get_data('Imagenet8_train', 'Imagenet8_val')
-
     model = SqueezeNet(num_classes)
-
     train_data = train_data.batch(model.batch_size)
     test_data = test_data.batch(model.batch_size)
     for _ in range(10):
