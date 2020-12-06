@@ -1,16 +1,24 @@
+# Remove most of the annoying wordy tensorflow prints
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import numpy as np
 import tensorflow as tf
 
 # pip install -q tensorflow-model-optimization
 import tensorflow_model_optimization as tfmot
 
+# Makes model quantization aware and retrains. Optional call before quantize.
 # Inputs:
 #   model - Pre-trained model to quantize.
 #   optimizer, loss, metrics - Features used to train model.
 #   train_data, train_labels - Retraining data. Does not need to be new.
-#   subset_size - Size of subet of data to retrain on.
+#   subset_size - Size of subset of data to retrain on.
 #   batch_size, epochs, validation_split - Features used to retrain model.
-def quantize(model, optimizer, loss, metrics,
+def pre_quantize(model,
+             optimizer='adam',
+             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+             metrics=['accuracy'],
              train_data=None, train_labels=None, subset_size=None,
              batch_size=500, epochs=1, validation_split=0.1):
     # Make model quantization aware
@@ -28,8 +36,11 @@ def quantize(model, optimizer, loss, metrics,
         q_aware_model.fit(train_images_subset, train_labels_subset,
                           batch_size=batch_size, epochs=epochs, validation_split=validation_split)
 
-    # Make model quantized
-    converter = tf.lite.TFLiteConverter.from_keras_model(q_aware_model)
+    return q_aware_model
+
+# Quantizes model
+def quantize(model):
+    converter = tf.lite.TFLiteConverter.from_keras_model(model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     quantized_tflite_model = converter.convert()
 
@@ -88,8 +99,8 @@ def demo(save):
                   metrics=['accuracy'])
     model.fit(train_images, train_labels, epochs=1, validation_split=0.1)
 
-    # Quanitzation call
-    quantized_tflite_model = quantize(model,
+    # Makes model quantization aware and retrains (OPTIONAL)
+    q_aware_model = pre_quantize(model,
              optimizer='adam',
              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
              metrics=['accuracy'],
@@ -100,11 +111,14 @@ def demo(save):
              epochs=1,
              validation_split=0.1)
 
+    # Quantizes model
+    quantized_tflite_model = quantize(q_aware_model)
+
     # Display model sizes
     display_diff(model, quantized_tflite_model)
 
+    # Save model
     if save:
-        # Save model
         save_model(quantized_tflite_model, 'model.tflite')
 
 def demo_interp():
