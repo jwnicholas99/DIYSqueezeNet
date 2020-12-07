@@ -1,6 +1,8 @@
 import tensorflow as tf
 
 from preprocess import get_data
+from quantization import pre_quantize, quantize, save_model, load_model
+from huffman_opt import encode, decode
 from model import SqueezeNet
 import pathlib
 import os
@@ -83,6 +85,41 @@ def main():
             period = 2),
     ]
     model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
+
+    # Pre-quanitzation. Fill in parameters to increase accuracy.
+    # q_aware_model = pre_quantize(model,
+    #          optimizer='adam',
+    #          loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    #          metrics=['accuracy'],
+    #          train_data=train_images,
+    #          train_labels=train_labels,
+    #          subset_size=1000,
+    #          batch_size=500,
+    #          epochs=1,
+    #          validation_split=0.1)
+
+    # Quantization Call
+    quantized_tflite_model = quantize(model)
+
+    # Save model
+    file_path = 'DIYSqueezeNet.tflite'
+    save_model(quantized_tflite_model, file_path)
+
+    # Load model
+    interpreter = load_model(file_path)
+
+    print("TODO: See which of these layers are important. Look for quantization layer.")
+    for x in enumerate(interpreter.get_tensor_details()):
+        print("[{}]: {}".format(x[0], x[1]), flush=True)
+
+    important_tensor = interpreter.get_tensor(0)
+
+    # Huffman Encoding
+    code, codec = encode(important_tensor)
+    output_weights = decode(code, codec, shape=important_tensor.shape)
+
+    assert(np.all(tf.equal(important_tensor, output_weights)))
+
 
 if __name__ == "__main__":
     print(tf.__version__)
