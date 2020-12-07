@@ -53,7 +53,6 @@ def make_or_restore_model(num_classes):
 if __name__ == "__main__":
     print(tf.__version__)
     train_data, test_data, num_classes = get_data('Imagenet32_train', 'Imagenet32_val')
-    model = make_or_restore_model(num_classes)
     train_data = train_data.batch(BATCH_SIZE)
     test_data = test_data.batch(BATCH_SIZE)
 
@@ -61,7 +60,9 @@ if __name__ == "__main__":
     AUTOTUNE = tf.data.experimental.AUTOTUNE
     train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
     test_data = test_data.cache().prefetch(buffer_size=AUTOTUNE)
+    #print("TRAIN DATA1", train_data)
 
+    model = make_or_restore_model(num_classes)
     # Training:
     my_callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
