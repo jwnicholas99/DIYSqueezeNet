@@ -8,7 +8,23 @@ from model import SqueezeNet
 
 def load_model(args):
     model = tf.keras.models.load_model(args['filepath'])
+    squeezenet = model.get_layer(index=2)
+    squeezenet.save_weights("saved_weights")
+    model = SqueezeNet(6)
+    model.load_weights("saved_weights")
+    model.wrap_layer_pruning()
+    model = tf.keras.Sequential([
+        model
+        ])
+    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
+    model.build((None, 150, 150, 3))
+    model.summary()
+    """
+    model = tf.keras.models.load_model(args['filepath'])
     squeeze = model.get_layer(index=2)
+    for layer in squeeze.layers:
+        print(layer)
+        tfmot.sparsity.keras.prune_low_magnitude(layer)
     
     def apply_pruning_to_layers(layer):
         if layer == squeeze:
@@ -20,11 +36,16 @@ def load_model(args):
         return layer
     
     model = tf.keras.models.clone_model(model, clone_function=apply_pruning_to_layers)
+    """
     return model
 
 def prune_model(model):
     # pruning hyperparams
     num_epochs = 5
+    train_data_dir = "intel6/seg_train"
+    test_data_dir = "intel6/seg_test"
+    IMAGE_DIM = 150
+    BATCH_SIZE = 32
 
     # prune model
     train_data = tf.keras.preprocessing.image_dataset_from_directory(
