@@ -9,8 +9,8 @@ IMAGE_DIM = 150 # Unmodified size of caltech images
 NUM_CLASSES = 6
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
-train_data_dir = pathlib.Path('seg_train')
-test_data_dir = pathlib.Path('seg_test')
+train_data_dir = pathlib.Path('intel6/seg_train')
+test_data_dir = pathlib.Path('intel6/seg_test')
 
 # Prepare a directory to store all the checkpoints.
 checkpoint_dir = './ckpt'
@@ -24,19 +24,21 @@ def make_model(num_classes):
         SqueezeNet(num_classes)
         ])
 
-    start_learning_rate = 1e-3
-    end_learning_rate = 1e-5
+    start_learning_rate = 0.4
+    end_learning_rate = 1e-4
     decay_steps = 10000
     learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
         start_learning_rate,
         decay_steps,
         end_learning_rate,
         power=0.5)
-
+    """
     model.compile(optimizer=tf.keras.optimizers.Adam(
         learning_rate=learning_rate_fn),
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy'])
+    """
+    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
     model.build((None, IMAGE_DIM, IMAGE_DIM, 3))
     model.summary()
 
@@ -78,7 +80,7 @@ def main():
     my_callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
-            period = 200),
+            period = 2),
     ]
     model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
 
