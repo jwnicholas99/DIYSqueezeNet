@@ -12,18 +12,17 @@ class SqueezeNet(tf.keras.Model):
         """
         super(SqueezeNet, self).__init__()
 
-        # Initialize hyperparameters
-        self.batch_size = 32
-        self.num_classes = num_classes
-
-        start_learning_rate = 1e-3
-        end_learning_rate = 1e-5
-        num_steps = 10000
-        self.learning_rate_fn = keras.optimizers.schedules.PolynomialDecay(start_learning_rate,
-                                                                      10000,
-                                                                      end_learning_rate,
-                                                                      power=1.0)
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate_fn)
+        # MOVING HYPERPARAMETERS INTO RUN.PY:
+        # self.batch_size = 32
+        # self.num_classes = num_classes
+        # start_learning_rate = 0.04
+        # end_learning_rate = 0.00001
+        #num_steps = 10000
+        #self.learning_rate_fn = keras.optimizers.schedules.PolynomialDecay(start_learning_rate,
+                                                                      #10000,
+                                                                      #end_learning_rate,
+                                                                      #power=1.0)
+        #self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate_fn)
 
         # Initialize learnable parameters
         self.conv1 = keras.layers.Convolution2D(96, (7,7), activation='relu',
@@ -74,11 +73,19 @@ class SqueezeNet(tf.keras.Model):
         probs = self.softmax(global_avgpool10)
         return probs
 
-    def loss(self, probs, labels):
-        return tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, probs))
+    # def loss(self, probs, labels):
+    #     return tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, probs))
 
+<<<<<<< HEAD
     def top1_accuracy(self, probs, labels):
         return tf.reduce_mean(keras.metrics.sparse_categorical_accuracy(labels, probs))
 
     def top5_accuracy(self, probs, labels):
         return tf.reduce_mean(keras.metrics.sparse_top_k_categorical_accuracy(labels, probs, k=2))
+=======
+    # def top1_accuracy(self, probs, labels):
+    #     return keras.metrics.sparse_categorical_accuracy(labels, probs)
+
+    # def top5_accuracy(self, probs, labels):
+    #     return keras.metrics.sparse_top_k_categorical_accuracy(labels, probs, k=5)
+>>>>>>> a962b97 (Modifications.)
