@@ -52,7 +52,7 @@ def make_or_restore_model(num_classes):
 
 if __name__ == "__main__":
     print(tf.__version__)
-    train_data, test_data, num_classes = get_data('Imagenet8_train', 'Imagenet8_val')
+    train_data, test_data, num_classes = get_data('Imagenet32_train', 'Imagenet32_val')
     model = make_or_restore_model(num_classes)
     train_data = train_data.batch(BATCH_SIZE)
     test_data = test_data.batch(BATCH_SIZE)
@@ -63,7 +63,6 @@ if __name__ == "__main__":
     test_data = test_data.cache().prefetch(buffer_size=AUTOTUNE)
 
     # Training:
-    model = make_or_restore_model(num_classes)
     my_callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
