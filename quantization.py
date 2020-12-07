@@ -16,11 +16,11 @@ import tensorflow_model_optimization as tfmot
 #   subset_size - Size of subset of data to retrain on.
 #   batch_size, epochs, validation_split - Features used to retrain model.
 def pre_quantize(model,
-             optimizer='adam',
-             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-             metrics=['accuracy'],
-             train_data=None, train_labels=None, subset_size=None,
-             batch_size=500, epochs=1, validation_split=0.1):
+                 optimizer='adam',
+                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                 metrics=['accuracy'],
+                 train_data=None, train_labels=None, subset_size=None,
+                 batch_size=500, epochs=1, validation_split=0.1):
     # Make model quantization aware
     quantize_model = tfmot.quantization.keras.quantize_model
     q_aware_model = quantize_model(model)
