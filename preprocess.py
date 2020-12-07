@@ -30,9 +30,10 @@ def load_databatch(data_folder, img_size=32, is_train=True):
 def get_data(train_file_path, test_file_path, batch_size=1000):
     train_set = [os.path.join(train_file_path, 'train_data_batch_' + str(i+1)) for i in range(10)]
     train_files_dataset = tf.data.Dataset.list_files(train_set)
-    train_data = train_files_dataset.interleave(lambda x: tf.data.Dataset.from_tensor_slices(
-            tuple(tf.py_function(func=load_databatch, inp=[x], Tout=[tf.float64, tf.float64])
-            )), num_parallel_calls=2)
+
+    # train_data = train_files_dataset.interleave(lambda x: tf.data.Dataset.from_tensor_slices(
+    #         tuple(tf.py_function(func=load_databatch, inp=[x], Tout=[tf.float64, tf.float64])
+    #         )), num_parallel_calls=2)
     #for i in range(10):
     #    train_undata = load_databatch(train_file_path, idx=i+1)
     #    train_data = tf.data.Dataset.from_tensor_slices(train_undata)
