@@ -24,8 +24,8 @@ def make_model(num_classes):
         SqueezeNet(num_classes)
         ])
 
-    start_learning_rate = 0.04
-    end_learning_rate = 0.00001
+    start_learning_rate = 1e-3
+    end_learning_rate = 1e-5
     decay_steps = 10000
     learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
         start_learning_rate,

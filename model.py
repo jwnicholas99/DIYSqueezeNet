@@ -76,16 +76,8 @@ class SqueezeNet(tf.keras.Model):
     # def loss(self, probs, labels):
     #     return tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, probs))
 
-<<<<<<< HEAD
-    def top1_accuracy(self, probs, labels):
-        return tf.reduce_mean(keras.metrics.sparse_categorical_accuracy(labels, probs))
-
-    def top5_accuracy(self, probs, labels):
-        return tf.reduce_mean(keras.metrics.sparse_top_k_categorical_accuracy(labels, probs, k=2))
-=======
     # def top1_accuracy(self, probs, labels):
     #     return keras.metrics.sparse_categorical_accuracy(labels, probs)
 
     # def top5_accuracy(self, probs, labels):
     #     return keras.metrics.sparse_top_k_categorical_accuracy(labels, probs, k=5)
->>>>>>> a962b97 (Modifications.)
