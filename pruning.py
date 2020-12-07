@@ -19,6 +19,7 @@ def load_model(args):
     model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
     model.build((None, 150, 150, 3))
     model.summary()
+    model = model.strip_model_prune()
     """
     model = tf.keras.models.load_model(args['filepath'])
     squeeze = model.get_layer(index=2)

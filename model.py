@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow_model_optimization as tfmot
+from tensorflow_model_optimization.python.core.sparsity.keras import pruning_wrapper
 
 from fire_mod import FireLayer
 
@@ -89,6 +90,23 @@ class SqueezeNet(tf.keras.Model):
         self.fire11.wrap_layer_pruning()
 
         self.conv13 = tfmot.sparsity.keras.prune_low_magnitude(self.conv13)
+        
+    def strip_pruning_wrapping(self, layer):
+        if isinstance(layer, tf.keras.Model):
+            # A keras model with prunable layers
+            return keras.models.clone_model(
+                layer, input_tensors=None, clone_function=layer.strip_layer_pruning_wrapper)
+        if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
+            # The _batch_input_shape attribute in the first layer makes a Sequential
+            # model to be built. This makes sure that when we remove the wrapper from
+            # the first layer the model's built state preserves.
+            if not hasattr(layer.layer, '_batch_input_shape') and hasattr(
+                    layer, '_batch_input_shape'):
+                layer.layer._batch_input_shape = layer._batch_input_shape
+            return layer.layer
+        
+    def strip_model_prune(self):
+        return keras.models.clone_model(self, input_tensors=None, clone_function=self.strip_pruning_wrapping)
 
 
     # def loss(self, probs, labels):
