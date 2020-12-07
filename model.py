@@ -1,5 +1,6 @@
 import tensorflow as tf
 import tensorflow.keras as keras
+import tensorflow_model_optimization as tfmot
 
 from fire_mod import FireLayer
 
@@ -72,6 +73,23 @@ class SqueezeNet(tf.keras.Model):
 
         probs = self.softmax(global_avgpool14)
         return probs
+    
+    def wrap_layer_pruning(self):
+        self.conv1 = tfmot.sparsity.keras.prune_low_magnitude(self.conv1)
+
+        self.fire2.wrap_layer_pruning()
+        self.fire3.wrap_layer_pruning()
+
+        self.fire5.wrap_layer_pruning()
+        self.fire6.wrap_layer_pruning()
+
+        self.fire8.wrap_layer_pruning()
+        self.fire9.wrap_layer_pruning()
+        self.fire10.wrap_layer_pruning()
+        self.fire11.wrap_layer_pruning()
+
+        self.conv13 = tfmot.sparsity.keras.prune_low_magnitude(self.conv13)
+
 
     # def loss(self, probs, labels):
     #     return tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, probs))

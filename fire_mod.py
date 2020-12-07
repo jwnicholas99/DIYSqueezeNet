@@ -1,7 +1,8 @@
 import tensorflow as tf
 import tensorflow.keras as keras
+import tensorflow_model_optimization as tfmot
 
-class FireLayer(tf.keras.layers.Layer):
+class FireLayer(tf.keras.Model):
     def __init__(self, squeeze_filters, expand_filters):
         """
         :param squeeze_filters: num of filters after squeezing
@@ -42,3 +43,11 @@ class FireLayer(tf.keras.layers.Layer):
         concat = self.concat([expand_1x1, expand_3x3])
 
         return concat
+    
+    def wrap_layer_pruning(self):
+        self.squeeze = tfmot.sparsity.keras.prune_low_magnitude(self.squeeze)
+        self.expand_1x1 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_1x1)
+        self.expand_3x3 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_3x3)
+        
+    def strip_layer_pruning(self):
+        pass
