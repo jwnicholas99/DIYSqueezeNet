@@ -16,8 +16,8 @@ class SqueezeNet(tf.keras.Model):
         self.batch_size = 32
         self.num_classes = num_classes
 
-        start_learning_rate = 0.04
-        end_learning_rate = 0.00001
+        start_learning_rate = 1e-3
+        end_learning_rate = 1e-5
         num_steps = 10000
         self.learning_rate_fn = keras.optimizers.schedules.PolynomialDecay(start_learning_rate,
                                                                       10000,

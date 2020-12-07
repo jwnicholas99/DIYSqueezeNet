@@ -5,7 +5,6 @@ import os
 #import tensorflow.keras.preprocessing.image as ImagePreprocess
 
 def unpickle(file):
-    
     if type(file) != str:
         file = file.numpy().decode('utf-8')
     with open(file, 'rb') as fo:
@@ -41,9 +40,9 @@ def get_data(train_file_path, test_file_path, batch_size=1000):
     #        train_set = train_data
     #    else:
     #        train_set.concatenate(train_data)
-    val_undata = load_databatch(test_file_path, is_train=False)
+    #val_undata = load_databatch(test_file_path, is_train=False)
     #print('yes?')
-    validation_data = tf.data.Dataset.from_tensor_slices(tuple(val_undata))
+    validation_data = tf.data.Dataset.from_tensor_slices(tuple(load_databatch(test_file_path, is_train=False)))
     
     """train_datagen = ImagePreprocess.ImageDataGenerator(
         rescale=1./255,

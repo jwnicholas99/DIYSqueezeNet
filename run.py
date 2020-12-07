@@ -13,10 +13,11 @@ def train(model, train_data):
     :param labels: train labels (all labels to use for training), 
     shape (num_labels, num_classes)
     '''
-    train_data = train_data.shuffle(1281167)
+    #train_data = train_data.shuffle(1281167)
     #train_data = train_data.map(tf.image.random_flip_left_right)
     #train_data = train_data.map(tf.image.random_flip_up_down)
 
+    batch_num = 0
     for batch in train_data:
         batch_x = batch[0]
         batch_y = tf.cast(batch[1], tf.int32)
@@ -27,7 +28,10 @@ def train(model, train_data):
         #print("Loss: ", loss)
         gradients = tape.gradient(loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-        break
+        
+        if (batch_num % 10) == 0:
+            print("   [*] Batch {batch_num} Loss: {loss}".format(batch_num=batch_num, loss=loss))
+        batch_num += 1
     return
 
 def test(model, test_data):
@@ -52,8 +56,6 @@ def test(model, test_data):
         probs = model.call(batch_x)
         top1_acc = model.top1_accuracy(probs, batch_y)
         top5_acc = model.top5_accuracy(probs, batch_y)
-        print(top1_acc)
-        #print(top1_num_corr)
         top1_num_corr += top1_acc * len(batch_y)
         top5_num_corr += top5_acc * len(batch_y)
     top1_acc = top1_num_corr / label_length
@@ -65,11 +67,13 @@ def main():
     model = SqueezeNet(num_classes)
     train_data = train_data.batch(model.batch_size)
     test_data = test_data.batch(model.batch_size)
-    for _ in range(5):
+    for _ in range(10):
+        print("[+] Start training")
         train(model, train_data)
+        print("[+] Start testing")
         top1_acc, top5_acc = test(model, test_data)
-        print("Top 1 Accuracy: ", top1_acc)
-        print("Top 5 Accuracy: ", top5_acc)
+        print("[+] Top 1 Accuracy: ", top1_acc)
+        print("[+] Top 5 Accuracy: ", top5_acc)
     return
 
 
