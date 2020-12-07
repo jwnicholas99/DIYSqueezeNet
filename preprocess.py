@@ -12,7 +12,7 @@ def unpickle(file):
         dict = pickle.load(fo)
     return dict
 
-def load_databatch(data_folder, img_size=8, is_train=True):
+def load_databatch(data_folder, img_size=32, is_train=True):
     if is_train:
         data_file = data_folder #os.path.join(data_folder, 'train_data_batch_')
         d = unpickle(data_file)# + str(idx))
