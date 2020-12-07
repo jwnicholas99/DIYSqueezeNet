@@ -7,42 +7,48 @@ import tensorflow_model_optimization as tfmot
 from model import SqueezeNet
 
 def load_model(args):
-    model = SqueezeNet(args['num_class'])
-    model.load_weights(args['filepath'])
+    model = tf.keras.models.load_model(args['filepath'])
+    squeeze = model.get_layer(index=2)
+    
+    def apply_pruning_to_layers(layer):
+        if layer == squeeze:
+            return tf.keras.models.clone_model(layer, clone_function=apply_pruning_to_layers)
+        
+        elif not isinstance(layer, tf.keras.layers.experimental.preprocessing.RandomFlip) \
+        and not isinstance(layer, tf.keras.layers.experimental.preprocessing.RandomRotation):
+            return tfmot.sparsity.keras.prune_low_magnitude(layer)
+        return layer
+    
+    model = tf.keras.models.clone_model(model, clone_function=apply_pruning_to_layers)
     return model
 
 def prune_model(model):
-    model = tfmot.sparsity.keras.prune_low_magnitude(model)
-    train_inputs, train_labels, test_inputs, test_labels, num_classes = get_data()
-
     # pruning hyperparams
     num_epochs = 5
-    step_callback = tfmot.sparsity.keras.UpdatePruningStep()
-    step_callback.set_model(model)
 
     # prune model
-    step_callback.on_train_begin()
-    for _ in range(num_epochs):
-        indices = tf.random.shuffle(tf.range(len(train_labels)))
-        train_inputs = tf.gather(train_inputs, indices)
-        train_labels = tf.gather(train_labels, indices)
+    train_data = tf.keras.preprocessing.image_dataset_from_directory(
+        train_data_dir,
+        seed=123,
+        image_size=(IMAGE_DIM, IMAGE_DIM),
+        batch_size=BATCH_SIZE)
 
-        for start in range(0, len(train_labels), model.batch_size):
-            step_callback.on_train_batch_begin()
-            end = start + model.batch_size
-            batch_x = train_inputs[start:end]
-            batch_y = train_labels[start:end]
+    test_data = tf.keras.preprocessing.image_dataset_from_directory(
+        test_data_dir,
+        seed=123,
+        image_size=(IMAGE_DIM, IMAGE_DIM),
+        batch_size=BATCH_SIZE)
 
-            with tf.gradienttape() as tape:
-                probs = model.call(batch_x)
-                loss = model.loss(probs, batch_y)
-            print("loss: ", loss)
-            gradients = tape.gradient(loss, model.trainable_variables)
-            model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    # Caching best practices
+    AUTOTUNE = tf.data.experimental.AUTOTUNE
+    train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
+    test_data = test_data.cache().prefetch(buffer_size=AUTOTUNE)
 
-        step_callback.on_epoch_end()
-
-    return model
+    # Training:
+    my_callbacks = [
+        tfmot.sparsity.keras.UpdatePruningStep(),
+    ]
+    model.fit(train_data, epochs=num_epochs, validation_data=test_data, callbacks=my_callbacks)
 
 def export_model(model, args):
     model_for_export = tfmot.sparsity.keras.strip_pruning(model)
@@ -56,12 +62,10 @@ if __name__=="__main__":
     parser.add_argument('--filepath', type=str, help="filepath of network weights")
     parser.add_argument('--outpath', type=str, help="filepath to save pruned model")
     parser.add_argument('--zippath', type=str, help="filepath to zip pruned model")
-    parser.add_argument('--num_class', type=int, help="number of classes")
     args = vars(parser.parse_args())
 
     if not os.path.exists(args['filepath']):
         print("File not found")
-        return
 
     model = load_model(args)
     model = prune_model(model)
