@@ -1,4 +1,5 @@
 import os
+import tempfile
 import argparse
 import zipfile
 import tensorflow as tf
@@ -12,6 +13,7 @@ def load_model(args):
     squeezenet.save_weights("saved_weights")
     model = SqueezeNet(6)
     model.load_weights("saved_weights")
+    
     model.wrap_layer_pruning()
     model = tf.keras.Sequential([
         tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
@@ -20,58 +22,52 @@ def load_model(args):
         ])
     model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
     model.build((None, 150, 150, 3))
-    model.summary()
-    """
-    model = tf.keras.models.load_model(args['filepath'])
-    squeeze = model.get_layer(index=2)
-    for layer in squeeze.layers:
-        print(layer)
-        tfmot.sparsity.keras.prune_low_magnitude(layer)
-    
-    def apply_pruning_to_layers(layer):
-        if layer == squeeze:
-            return tf.keras.models.clone_model(layer, clone_function=apply_pruning_to_layers)
-        
-        elif not isinstance(layer, tf.keras.layers.experimental.preprocessing.RandomFlip) \
-        and not isinstance(layer, tf.keras.layers.experimental.preprocessing.RandomRotation):
-            return tfmot.sparsity.keras.prune_low_magnitude(layer)
-        return layer
-    
-    model = tf.keras.models.clone_model(model, clone_function=apply_pruning_to_layers)
-    """
+
     return model
 
-def prune_model(model):
+def get_gzipped_model_size(model):
+    _, pruned_keras_file = tempfile.mkstemp('.h5')
+    tf.keras.models.save_model(model, pruned_keras_file, include_optimizer=False)
+    
+    _, zipped_file = tempfile.mkstemp('.zip')
+    with zipfile.Zipfile(zipped_file, 'w', compression=zipfile.ZIP_DEFLATED) as f:
+        f.write(pruned_keras_file)
+    return os.path.getsize(zipped_file)
+
+def prune_model(model, train_data, test_data=None):
     # pruning hyperparams
     num_epochs = 1
-    train_data_dir = "intel6/seg_train"
-    test_data_dir = "intel6/seg_test"
-    IMAGE_DIM = 150
     BATCH_SIZE = 32
 
-    # prune model
-    train_data = tf.keras.preprocessing.image_dataset_from_directory(
-        train_data_dir,
-        seed=123,
-        image_size=(IMAGE_DIM, IMAGE_DIM),
-        batch_size=BATCH_SIZE)
+    # Print original model size
+    #print("[*] Size of gzipped baseline model: {} bytes".format(get_gzipped_model_size(model)))
 
-    test_data = tf.keras.preprocessing.image_dataset_from_directory(
-        test_data_dir,
-        seed=123,
-        image_size=(IMAGE_DIM, IMAGE_DIM),
-        batch_size=BATCH_SIZE)
-
-    # Caching best practices
-    AUTOTUNE = tf.data.experimental.AUTOTUNE
-    train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
-    test_data = test_data.cache().prefetch(buffer_size=AUTOTUNE)
+    # Create prune model
+    squeezenet = model.get_layer(index=2)
+    #squeezenet.save_weights("saved_weights")
+    #model = SqueezeNet(6)
+    #model.load_weights("saved_weights")
+    
+    squeezenet.wrap_layer_pruning()
+    model = tf.keras.Sequential([
+        tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
+        tf.keras.layers.experimental.preprocessing.RandomRotation(0.3),
+        model
+        ])
+    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
+    model.build((None, 150, 150, 3))
 
     # Training:
     my_callbacks = [
         tfmot.sparsity.keras.UpdatePruningStep(),
     ]
-    model.fit(train_data, epochs=num_epochs, validation_data=test_data, callbacks=my_callbacks)
+    if test_data is None:
+        model.fit(train_data, epochs=NUM_EPOCHS, validation_split=0.1, callbacks=my_callbacks)
+    else:
+        model.fit(train_data, epochs=num_epochs, validation_data=test_data, callbacks=my_callbacks)
+
+    # Print pruned model size
+    #print("[*] Size of gzipped pruned model: {} bytes".format(get_gzipped_model_size(model)))
 
     return model
 
@@ -93,7 +89,7 @@ if __name__=="__main__":
 
     if not os.path.exists(args['filepath']):
         print("File not found")
-
+    
     model = load_model(args)
-    model = prune_model(model)
+    model = prune_model(model, train_data, test_data)
     export_model(model, args)
