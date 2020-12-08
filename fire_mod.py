@@ -50,7 +50,7 @@ class FireLayer(tf.keras.Model):
         self.expand_1x1 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_1x1)
         self.expand_3x3 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_3x3)
         
-    def strip_layer_pruning_wrapper(self, layer):
+    def strip_pruning_wrapping(self, layer):
         if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
             if not hasattr(layer.layer, '_batch_input_shape') and hasattr(
                     layer, '_batch_input_shape'):
@@ -60,6 +60,8 @@ class FireLayer(tf.keras.Model):
             print('layer not wrapped')
             return layer
     
-    def strip_layer_pruning(self):
-        return keras.models.clone_model(self, input_tensors=None, clone_function=self.strip_layer_pruning_wrapper)
+    def strip_model_prune(self):
+        self.squeeze = self.strip_pruning_wrapping(self.squeeze)
+        self.expand_1x1 = self.strip_pruning_wrapping(self.expand_1x1)
+        self.expand_3x3 = self.strip_pruning_wrapping(self.expand_3x3)
   

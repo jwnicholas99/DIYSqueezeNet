@@ -92,10 +92,6 @@ class SqueezeNet(tf.keras.Model):
         self.conv13 = tfmot.sparsity.keras.prune_low_magnitude(self.conv13)
         
     def strip_pruning_wrapping(self, layer):
-        if isinstance(layer, tf.keras.Model):
-            # A keras model with prunable layers
-            return keras.models.clone_model(
-                layer, input_tensors=None, clone_function=layer.strip_layer_pruning_wrapper)
         if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
             # The _batch_input_shape attribute in the first layer makes a Sequential
             # model to be built. This makes sure that when we remove the wrapper from
@@ -104,9 +100,24 @@ class SqueezeNet(tf.keras.Model):
                     layer, '_batch_input_shape'):
                 layer.layer._batch_input_shape = layer._batch_input_shape
             return layer.layer
+        else:
+            return layer
         
     def strip_model_prune(self):
-        return keras.models.clone_model(self, input_tensors=None, clone_function=self.strip_pruning_wrapping)
+        self.conv1 = self.strip_pruning_wrapping(self.conv1)
+
+        self.fire2.strip_model_prune()
+        self.fire3.strip_model_prune()
+
+        self.fire5.strip_model_prune()
+        self.fire6.strip_model_prune()
+
+        self.fire8.strip_model_prune()
+        self.fire9.strip_model_prune()
+        self.fire10.strip_model_prune()
+        self.fire11.strip_model_prune()
+
+        self.conv13 = self.strip_pruning_wrapping(self.conv13)
 
 
     # def loss(self, probs, labels):

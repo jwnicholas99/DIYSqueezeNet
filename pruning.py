@@ -14,12 +14,13 @@ def load_model(args):
     model.load_weights("saved_weights")
     model.wrap_layer_pruning()
     model = tf.keras.Sequential([
+        tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
+        tf.keras.layers.experimental.preprocessing.RandomRotation(0.3),
         model
         ])
     model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
     model.build((None, 150, 150, 3))
     model.summary()
-    model = model.strip_model_prune()
     """
     model = tf.keras.models.load_model(args['filepath'])
     squeeze = model.get_layer(index=2)
@@ -42,7 +43,7 @@ def load_model(args):
 
 def prune_model(model):
     # pruning hyperparams
-    num_epochs = 5
+    num_epochs = 1
     train_data_dir = "intel6/seg_train"
     test_data_dir = "intel6/seg_test"
     IMAGE_DIM = 150
@@ -72,9 +73,13 @@ def prune_model(model):
     ]
     model.fit(train_data, epochs=num_epochs, validation_data=test_data, callbacks=my_callbacks)
 
+    return model
+
 def export_model(model, args):
-    model_for_export = tfmot.sparsity.keras.strip_pruning(model)
-    tf.keras.models.save_model(model_for_export, args['outpath'], include_optimizer=False)
+    squeezenet = model.get_layer(index=2)
+    squeezenet.strip_model_prune()
+    squeezenet.summary()
+    tf.keras.models.save_model(model, args['outpath'], include_optimizer=False)
 
     with zipfile.ZipFile(args['zippath'], 'w', compression=zipfile.ZIP_DEFLATED) as f:
         f.write(args['outpath'])
