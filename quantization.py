@@ -19,21 +19,19 @@ def pre_quantize(model,
                  optimizer='adam',
                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                  metrics=['accuracy'],
-                 train_data=None, train_labels=None, subset_size=None,
+                 train_data=None, num_shards=5,
                  batch_size=500, epochs=1, validation_split=0.1):
     # Make model quantization aware
+    #model.get_layer(index=2).quantize_submodels()
     quantize_model = tfmot.quantization.keras.quantize_model
+    quantize_model(model.get_layer(index=2))
     q_aware_model = quantize_model(model)
     q_aware_model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     # Retraining increases accuracy, but does not affect model size
     if train_data is not None and train_labels is not None:
-        # Default subset is 20%
-        if subset_size is None:
-            subset_size = round(0.2 * len(train_images))
-        train_images_subset = train_data[0:subset_size]
-        train_labels_subset = train_labels[0:subset_size]
-        q_aware_model.fit(train_images_subset, train_labels_subset,
+        train_shard = train_dataset.shard(num_shards)
+        q_aware_model.fit(train_shard,
                           batch_size=batch_size, epochs=epochs, validation_split=validation_split)
 
     return q_aware_model
