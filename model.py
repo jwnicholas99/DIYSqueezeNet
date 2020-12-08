@@ -118,6 +118,20 @@ class SqueezeNet(tf.keras.Model):
         self.fire11.strip_model_prune()
 
         self.conv13 = self.strip_pruning_wrapping(self.conv13)
+        
+    def quantize_submodels(self):
+        quantize_model = tfmot.quantization.keras.quantize_model
+        self.fire2 = quantize_model(self.fire2)
+        self.fire3 = quantize_model(self.fire3)
+
+        self.fire5 = quantize_model(self.fire5)
+        self.fire6 = quantize_model(self.fire6)
+
+        self.fire8 = quantize_model(self.fire8)
+        self.fire9 = quantize_model(self.fire9)
+        self.fire10 = quantize_model(self.fire10)
+        self.fire11 = quantize_model(self.fire11)
+
 
 
     # def loss(self, probs, labels):
