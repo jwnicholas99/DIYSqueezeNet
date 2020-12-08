@@ -9,10 +9,10 @@ from huffman_opt import encode, decode, compare_encoding_size
 from model import SqueezeNet
 import pathlib
 
-IMAGE_DIM = 150
+IMAGE_DIM = 96
 NUM_CLASSES = 6
 BATCH_SIZE = 32
-NUM_EPOCHS = 4
+NUM_EPOCHS = 100000
 IS_CALTECH = 0
 
 # Prepare a directory to store all the checkpoints.
@@ -24,11 +24,12 @@ def make_model(num_classes):
     model = tf.keras.Sequential([
         tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
         tf.keras.layers.experimental.preprocessing.RandomRotation(0.3),
+        tf.keras.layers.experimental.preprocessing.Resizing(72, 72, interpolation='nearest'),
         SqueezeNet(num_classes)
         ])
 
     model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
-    model.build((None, IMAGE_DIM, IMAGE_DIM, 3))
+    model.build((None, IMAGE_DIM, IMAGE_DIM, 1))
     model.summary()
 
     return model
@@ -53,12 +54,14 @@ def load_intel6():
         train_data_dir,
         seed=123,
         image_size=(IMAGE_DIM, IMAGE_DIM),
+        color_mode = "grayscale",
         batch_size=BATCH_SIZE)
 
     test_data = tf.keras.preprocessing.image_dataset_from_directory(
         test_data_dir,
         seed=123,
         image_size=(IMAGE_DIM, IMAGE_DIM),
+        color_mode = "grayscale",
         batch_size=BATCH_SIZE)
 
     # Caching best practices
@@ -100,7 +103,7 @@ def main():
     my_callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
-            period = 2),
+            period = 20),
     ]
     if IS_CALTECH:
         model.fit(train_data, epochs=NUM_EPOCHS, validation_split=0.1, callbacks=my_callbacks)
