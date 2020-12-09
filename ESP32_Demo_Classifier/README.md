@@ -30,6 +30,8 @@
 
 ## License / Credit
 
+[ORIGINAL DATASET](https://www.kaggle.com/puneet6060/intel-image-classification)
+
 Based off my own independent work building ESP32 projects (@EliZucker)
 
 Some functions and logic from the [person_detection](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/examples/person_detection) example are used due to a lack of Tensorflow Light Micro Documentation. I have included the original license (Apache 2.0) for that project with modifications by me listed.
