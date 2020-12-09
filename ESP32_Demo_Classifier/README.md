@@ -26,7 +26,7 @@
 
 - With the TTGO T-Camera ESP32 module, the OLED display driver seems to have I2C issues. I addressed this for now by repeatedly re-instantiating the connection. There are corresponding error messages in serial output, but functionality is fine.
 
-- Accuracy for this model is ~70%. We suspect this is from greyscale preprocessing — Even for a huaman, a greyscale glacier and greyscale mountain are difficult to distinguish.
+- Accuracy seems to cap out at ~70%. We suspect this is partly due to greyscale preprocessing — Even for a huaman, a greyscale glacier and greyscale mountain are difficult to distinguish.
 ![training](assets/training_screenshot.png)
 
 ## License / Credit
