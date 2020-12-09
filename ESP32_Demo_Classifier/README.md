@@ -5,7 +5,7 @@
 ## Overview
 **Demo:** Module that can classify across the Intel Image Dataset via camera and local inference on our own Squeezenet implementation.
 
-ESP32-CAM microcontroller will take a photo from the on-board rear camera, run inference via a pre-trained model (Squeezenet recreation), and display the classification result on its OLED display. Triggered by a manual button press. Currently, the project is configured specifically for pinouts on the [LILYGO TTGO T-Camera ESP32](https://www.aliexpress.com/item/32968683765.html?spm=a219c.10010108.1000016.1.17c16021VtcUmV&isOrigTitle=true) (~$15).
+**ESP32-CAM** microcontroller will take a photo from the on-board rear camera, run inference via a pre-trained model (Squeezenet recreation), and display the classification result on its OLED display. Triggered by a manual button press. Currently, the project is configured specifically for pinouts on the [LILYGO TTGO T-Camera ESP32](https://www.aliexpress.com/item/32968683765.html?spm=a219c.10010108.1000016.1.17c16021VtcUmV&isOrigTitle=true) (~$15).
 
 ## Features
 &nbsp;&nbsp;&nbsp;**-** &nbsp;Completely local inference on the ESP32 platform.
