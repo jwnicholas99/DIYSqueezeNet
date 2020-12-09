@@ -1,6 +1,6 @@
 # Intel Image Dataset Classifier (ESP32-CAM)
 
-<img align="left" width="475" src="demo_vid.gif" />
+<img align="left" width="475" src="assets/demo_vid.gif" />
 
 ## Overview
 **Demo:** Module that can classify across the Intel Image Dataset via camera and local inference on our own Squeezenet implementation.
@@ -26,7 +26,8 @@
 
 - With the TTGO T-Camera ESP32 module, the OLED display driver seems to have I2C issues. I addressed this for now by repeatedly re-instantiating the connection. There are corresponding error messages in serial output, but functionality is fine.
 
-- Accuracy for this model is ~70%. We suspect this is from greyscale preprocessing; A greyscaled glacier and mountain are difficult for even a human to distinguish.
+- Accuracy for this model is ~70%. We suspect this is from greyscale preprocessing — Even for a huaman, a greyscale glacier and greyscale mountain are difficult to distinguish.
+![training](assets/training_screenshot.png)
 
 ## License / Credit
 
