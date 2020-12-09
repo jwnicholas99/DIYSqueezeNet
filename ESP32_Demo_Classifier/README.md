@@ -26,7 +26,7 @@
 
 - With the TTGO T-Camera ESP32 module, the OLED display driver seems to have I2C issues. I addressed this for now by repeatedly re-instantiating the connection. There are corresponding error messages in serial output, but functionality is fine.
 
-- Accuracy seems to cap out at ~70%. We suspect this is partly due to greyscale preprocessing — Even for a huaman, a greyscale glacier and greyscale mountain are difficult to distinguish.
+- Accuracy seems to cap out at ~70%. We suspect this is partly due to greyscale preprocessing — Even for a human, a greyscale glacier and greyscale mountain are difficult to distinguish.
 ![training](assets/training_screenshot.png)
 
 ## License / Credit
@@ -35,4 +35,4 @@
 
 Based off my own independent work building ESP32 projects (@EliZucker)
 
-Some functions and logic from the [person_detection](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/examples/person_detection) example are used due to a lack of Tensorflow Light Micro Documentation. I have included the original license (Apache 2.0) for that project with modifications by me listed.
+Some functions and logic from the [person_detection](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/examples/person_detection) example are used due to lack of Tensorflow Light Micro Documentation. I have included the original license (Apache 2.0) for that project with modifications by me listed.
