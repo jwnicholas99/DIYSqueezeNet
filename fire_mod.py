@@ -1,7 +1,5 @@
 import tensorflow as tf
 import tensorflow.keras as keras
-import tensorflow_model_optimization as tfmot
-from tensorflow_model_optimization.python.core.sparsity.keras import pruning_wrapper
 
 class FireLayer(tf.keras.Model):
     def __init__(self, squeeze_filters, expand_filters):
@@ -44,24 +42,3 @@ class FireLayer(tf.keras.Model):
         concat = self.concat([expand_1x1, expand_3x3])
 
         return concat
-    
-    def wrap_layer_pruning(self):
-        self.squeeze = tfmot.sparsity.keras.prune_low_magnitude(self.squeeze)
-        self.expand_1x1 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_1x1)
-        self.expand_3x3 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_3x3)
-        
-    def strip_pruning_wrapping(self, layer):
-        if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
-            if not hasattr(layer.layer, '_batch_input_shape') and hasattr(
-                    layer, '_batch_input_shape'):
-                layer.layer._batch_input_shape = self.squeeze._batch_input_shape
-            return layer.layer
-        else:
-            print('layer not wrapped')
-            return layer
-    
-    def strip_model_prune(self):
-        self.squeeze = self.strip_pruning_wrapping(self.squeeze)
-        self.expand_1x1 = self.strip_pruning_wrapping(self.expand_1x1)
-        self.expand_3x3 = self.strip_pruning_wrapping(self.expand_3x3)
-  

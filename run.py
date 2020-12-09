@@ -1,40 +1,37 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
+import os
+import PIL
+import PIL.Image
 import tensorflow as tf
-
-from pruning import prune_model
-from quantization import pre_quantize, quantize, save_model, load_model, display_diff
-from huffman_opt import encode, decode, compare_encoding_size 
-from model import SqueezeNet
+import tensorflow_datasets as tfds
 import pathlib
-
-IMAGE_DIM = 96
-NUM_CLASSES = 6
-BATCH_SIZE = 32
-NUM_EPOCHS = 100000
-IS_CALTECH = 0
+import matplotlib.pyplot as plt
+from model import SqueezeNet
 
 # Prepare a directory to store all the checkpoints.
 checkpoint_dir = './ckpt'
 if not os.path.exists(checkpoint_dir):
     os.makedirs(checkpoint_dir)
 
-def make_model(num_classes):
-    model = tf.keras.Sequential([
+def make_model():
+    # Create a new linear regression model.
+    #model = tf.keras.applications.mobilenet.MobileNet(weights=None, input_shape=(96, 96, 1), alpha = 0.25, classes=6)
+
+    my_model = tf.keras.Sequential([ #37-40
+        tf.keras.layers.experimental.preprocessing.Resizing(72, 72, interpolation='nearest'),
         tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
         tf.keras.layers.experimental.preprocessing.RandomRotation(0.3),
-        tf.keras.layers.experimental.preprocessing.Resizing(72, 72, interpolation='nearest'),
-        SqueezeNet(num_classes)
+        # tf.keras.applications.mobilenet.MobileNet(weights=None, input_shape=(96, 96, 1), alpha = 0.39, include_top = False),
+        # tf.keras.layers.GlobalAveragePooling2D(),
+        # tf.keras.layers.Dense(6)
+        SqueezeNet(6)
         ])
+    my_model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+    my_model.build((None, 96, 96, 1))
+    my_model.summary()
+    return my_model
 
-    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
-    model.build((None, IMAGE_DIM, IMAGE_DIM, 1))
-    model.summary()
-
-    return model
-
-def make_or_restore_model(num_classes):
+def make_or_restore_model():
     # Either restore the latest model, or create a fresh one
     # if there is no checkpoint available.
     checkpoints = [checkpoint_dir + '/' + name
@@ -44,125 +41,64 @@ def make_or_restore_model(num_classes):
         print('Restoring from', latest_checkpoint)
         return tf.keras.models.load_model(latest_checkpoint)
     print('Creating a new model')
-    return make_model(num_classes)
-
-def load_intel6():
-    train_data_dir = pathlib.Path('intel6/seg_train')
-    test_data_dir = pathlib.Path('intel6/seg_test')
-    
-    train_data = tf.keras.preprocessing.image_dataset_from_directory(
-        train_data_dir,
-        seed=123,
-        image_size=(IMAGE_DIM, IMAGE_DIM),
-        color_mode = "grayscale",
-        batch_size=BATCH_SIZE)
-
-    test_data = tf.keras.preprocessing.image_dataset_from_directory(
-        test_data_dir,
-        seed=123,
-        image_size=(IMAGE_DIM, IMAGE_DIM),
-        color_mode = "grayscale",
-        batch_size=BATCH_SIZE)
-
-    # Caching best practices
-    AUTOTUNE = tf.data.experimental.AUTOTUNE
-    train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
-    test_data = test_data.cache().prefetch(buffer_size=AUTOTUNE)
-
-    return train_data, test_data
-
-def load_caltech256():
-    train_data_dir = pathlib.Path('256_ObjectCategories')
-    
-    train_data = tf.keras.preprocessing.image_dataset_from_directory(
-        train_data_dir,
-        seed=123,
-        image_size=(IMAGE_DIM, IMAGE_DIM),
-        batch_size=BATCH_SIZE)
-    
-    # Caching best practices
-    AUTOTUNE = tf.data.experimental.AUTOTUNE
-    train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
-
-    return train_data
-
-def main():
-    # Load dataset:
-    print("-" * 30)
-    print("[+] Start Loading Dataset")
-    if IS_CALTECH:
-        train_data, load_caltech256()
-    else:
-        train_data, test_data = load_intel6()
-    model = make_or_restore_model(NUM_CLASSES)
-
-
-    # Training:
-    print("-" * 30)
-    print("[+] Start Training")
-    my_callbacks = [
-        tf.keras.callbacks.ModelCheckpoint(
-            filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
-            period = 20),
-    ]
-    if IS_CALTECH:
-        model.fit(train_data, epochs=NUM_EPOCHS, validation_split=0.1, callbacks=my_callbacks)
-    else:
-        model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
-
-
-    # Prune model:
-    print("-" * 30)
-    print("[+] Start Pruning")
-    if IS_CALTECH:
-        model = prune_model(model, train_data)
-    else:
-        model = prune_model(model, train_data, test_data)
-
-
-    # Pre-quanitzation. Fill in parameters to increase accuracy.
-    """
-    q_aware_model = pre_quantize(model,
-             optimizer='adam',
-             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-             metrics=['accuracy'],
-             train_data=train_data,
-             num_shards=5,
-             batch_size=64,
-             epochs=1,
-             validation_split=0.1)
-    """
-
-    # Quantization Call
-    print("-" * 30)
-    print("[+] Start Quantization")
-    quantized_tflite_model = quantize(model)
-
-    # Save model
-    file_path = 'DIYSqueezeNet.tflite'
-    save_model(quantized_tflite_model, file_path)
-    display_diff(model, quantized_tflite_model)
-
-    # Load model
-    interpreter = load_model(file_path)
-
-    print("TODO: See which of these layers are important. Look for quantization layer.")
-    for x in enumerate(interpreter.get_tensor_details()):
-        print("[{}]: {}".format(x[0], x[1]["name"]), flush=True)
-        print(x[1]["shape"])
-
-    important_tensor = interpreter.get_tensor(52)
-
-    # Huffman Encoding
-    print("-" * 30)
-    print("[+] Start Huffman Encoding")
-    code, codec = encode(important_tensor)
-    output_weights = decode(code, codec, shape=important_tensor.shape)
-    compare_encoding_size(code, output_weights)
-
-    assert(np.all(tf.equal(important_tensor, output_weights)))
-
+    return make_model()
 
 if __name__ == "__main__":
     print(tf.__version__)
-    main()
+    train_dir = pathlib.Path('intel6/seg_train')
+    test_dir = pathlib.Path('intel6/seg_test')
+
+    # Generate batches from image files.
+    batch_size = 32
+    esp32_image_dims = (96, 96)
+    train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        train_dir,
+        seed=123,
+        color_mode = "grayscale",
+        image_size=esp32_image_dims,
+        batch_size=batch_size)
+
+    val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        test_dir,
+        seed=123,
+        color_mode = "grayscale",
+        image_size=esp32_image_dims,
+        batch_size=batch_size)
+
+    # Further preprocessing:
+    def process(image,label):
+        #image = tf.cast(image, tf.float32)
+        # image = tf.keras.applications.mobilenet.preprocess_input(image)
+        image = tf.cast((image/127.5) - 1.0, tf.float32)
+        return image,label
+    train_ds = train_ds.map(process)
+    val_ds = val_ds.map(process)
+
+    # lowest_value = float('inf')
+    # highest_value = float('-inf')
+    # for images, labels in train_ds.take(3):
+    #     for im_index in range(10):
+    #         for i in range(96):
+    #             for j in range(96):
+    #                 pixel = images[im_index].numpy()[i, j, 0]
+    #                 lowest_value = min(pixel, lowest_value)
+    #                 highest_value = max(pixel, highest_value)
+    # print("Range after processing: ")
+    # print(" ", lowest_value, "to", highest_value)
+
+    # Caching best practices
+    AUTOTUNE = tf.data.experimental.AUTOTUNE
+    train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+
+    # Training:
+    model = make_or_restore_model()
+    my_callbacks = [
+        tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
+            period = 200),
+    ]
+    model.fit(train_ds, epochs=2000000, validation_data=val_ds, callbacks=my_callbacks)
+
+
+

@@ -1,7 +1,5 @@
 import tensorflow as tf
 import tensorflow.keras as keras
-import tensorflow_model_optimization as tfmot
-from tensorflow_model_optimization.python.core.sparsity.keras import pruning_wrapper
 
 from fire_mod import FireLayer
 
@@ -74,71 +72,3 @@ class SqueezeNet(tf.keras.Model):
 
         probs = self.softmax(global_avgpool14)
         return probs
-    
-    def wrap_layer_pruning(self):
-        self.conv1 = tfmot.sparsity.keras.prune_low_magnitude(self.conv1)
-
-        self.fire2.wrap_layer_pruning()
-        self.fire3.wrap_layer_pruning()
-
-        self.fire5.wrap_layer_pruning()
-        self.fire6.wrap_layer_pruning()
-
-        self.fire8.wrap_layer_pruning()
-        self.fire9.wrap_layer_pruning()
-        self.fire10.wrap_layer_pruning()
-        self.fire11.wrap_layer_pruning()
-
-        self.conv13 = tfmot.sparsity.keras.prune_low_magnitude(self.conv13)
-        
-    def strip_pruning_wrapping(self, layer):
-        if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
-            # The _batch_input_shape attribute in the first layer makes a Sequential
-            # model to be built. This makes sure that when we remove the wrapper from
-            # the first layer the model's built state preserves.
-            if not hasattr(layer.layer, '_batch_input_shape') and hasattr(
-                    layer, '_batch_input_shape'):
-                layer.layer._batch_input_shape = layer._batch_input_shape
-            return layer.layer
-        else:
-            return layer
-        
-    def strip_model_prune(self):
-        self.conv1 = self.strip_pruning_wrapping(self.conv1)
-
-        self.fire2.strip_model_prune()
-        self.fire3.strip_model_prune()
-
-        self.fire5.strip_model_prune()
-        self.fire6.strip_model_prune()
-
-        self.fire8.strip_model_prune()
-        self.fire9.strip_model_prune()
-        self.fire10.strip_model_prune()
-        self.fire11.strip_model_prune()
-
-        self.conv13 = self.strip_pruning_wrapping(self.conv13)
-        
-    def quantize_submodels(self):
-        quantize_model = tfmot.quantization.keras.quantize_model
-        self.fire2 = quantize_model(self.fire2)
-        self.fire3 = quantize_model(self.fire3)
-
-        self.fire5 = quantize_model(self.fire5)
-        self.fire6 = quantize_model(self.fire6)
-
-        self.fire8 = quantize_model(self.fire8)
-        self.fire9 = quantize_model(self.fire9)
-        self.fire10 = quantize_model(self.fire10)
-        self.fire11 = quantize_model(self.fire11)
-
-
-
-    # def loss(self, probs, labels):
-    #     return tf.reduce_mean(keras.losses.sparse_categorical_crossentropy(labels, probs))
-
-    # def top1_accuracy(self, probs, labels):
-    #     return keras.metrics.sparse_categorical_accuracy(labels, probs)
-
-    # def top5_accuracy(self, probs, labels):
-    #     return keras.metrics.sparse_top_k_categorical_accuracy(labels, probs, k=5)
