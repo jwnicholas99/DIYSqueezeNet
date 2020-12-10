@@ -74,21 +74,30 @@ def load_caltech256():
     train_data = tf.keras.preprocessing.image_dataset_from_directory(
         train_data_dir,
         seed=123,
+        subset='training',
         image_size=(IMAGE_DIM, IMAGE_DIM),
+        validation_split=0.1,
+        batch_size=BATCH_SIZE)
+    test_data = tf.keras.preprocessing.image_dataset_from_directory(
+        train_data_dir,
+        seed=123,
+        subset='validation',
+        image_size=(IMAGE_DIM, IMAGE_DIM),
+        validation_split=0.1,
         batch_size=BATCH_SIZE)
     
     # Caching best practices
     AUTOTUNE = tf.data.experimental.AUTOTUNE
     train_data = train_data.cache().prefetch(buffer_size=AUTOTUNE)
 
-    return train_data
+    return train_data, test_data
 
 def main():
     # Load dataset:
     print("-" * 30)
     print("[+] Start Loading Dataset")
     if IS_CALTECH:
-        train_data, load_caltech256()
+        train_data, test_data = load_caltech256()
     else:
         train_data, test_data = load_intel6()
     model = make_or_restore_model(NUM_CLASSES)
@@ -102,20 +111,20 @@ def main():
             filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
             period = 2),
     ]
-    if IS_CALTECH:
-        model.fit(train_data, epochs=NUM_EPOCHS, validation_split=0.1, callbacks=my_callbacks)
-    else:
-        model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
-
+    #if IS_CALTECH:
+    #    model.fit(train_data, epochs=NUM_EPOCHS, callbacks=my_callbacks)
+    #else:
+    #    model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
+    model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
 
     # Prune model:
     print("-" * 30)
     print("[+] Start Pruning")
-    if IS_CALTECH:
-        model = prune_model(model, train_data)
-    else:
-        model = prune_model(model, train_data, test_data)
-
+    #if IS_CALTECH:
+    #    model = prune_model(model, train_data)
+    #else:
+    #    model = prune_model(model, train_data, test_data)
+    model = prune_model(model, train_data, test_data)
 
     # Pre-quanitzation. Fill in parameters to increase accuracy.
     """
