@@ -39,10 +39,11 @@ def load_model(args):
 
 def get_gzipped_model_size(model):
     _, pruned_keras_file = tempfile.mkstemp('.h5')
-    tf.keras.models.save_model(model, pruned_keras_file, include_optimizer=False)
+    #tf.keras.models.save_model(model, pruned_keras_file, include_optimizer=False)
+    model.save_weights(pruned_keras_file)
     
     _, zipped_file = tempfile.mkstemp('.zip')
-    with zipfile.Zipfile(zipped_file, 'w', compression=zipfile.ZIP_DEFLATED) as f:
+    with zipfile.ZipFile(zipped_file, 'w', compression=zipfile.ZIP_DEFLATED) as f:
         f.write(pruned_keras_file)
     return os.path.getsize(zipped_file)
 
@@ -61,11 +62,11 @@ def prune_model(model, train_data, test_data=None):
 
     """
     # pruning hyperparams
-    num_epochs = 1
-    BATCH_SIZE = 32
+    num_epochs = 10
+    BATCH_SIZE = 64
 
-    # Print original model size
-    #print("[*] Size of gzipped baseline model: {} bytes".format(get_gzipped_model_size(model)))
+    # Get original model size
+    og_size = get_gzipped_model_size(model.get_layer(index=2))
 
     # Create prune model
     squeezenet = model.get_layer(index=2)
@@ -91,8 +92,10 @@ def prune_model(model, train_data, test_data=None):
     else:
         model.fit(train_data, epochs=num_epochs, validation_data=test_data, callbacks=my_callbacks)
 
-    # Print pruned model size
-    #print("[*] Size of gzipped pruned model: {} bytes".format(get_gzipped_model_size(model)))
+    # Compare model size
+    print("[*] Size of gzipped baseline model: {} bytes".format(og_size))
+    print("[*] Size of gzipped pruned model: {} bytes".format(get_gzipped_model_size(model.get_layer(index=2))))
+    squeezenet.strip_model_prune()
 
     return model
 
