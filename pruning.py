@@ -70,9 +70,6 @@ def prune_model(model, train_data, test_data=None):
 
     # Create prune model
     squeezenet = model.get_layer(index=2)
-    #squeezenet.save_weights("saved_weights")
-    #model = SqueezeNet(6)
-    #model.load_weights("saved_weights")
     
     squeezenet.wrap_layer_pruning()
     model = tf.keras.Sequential([
