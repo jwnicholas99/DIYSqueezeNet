@@ -12,9 +12,34 @@ import pathlib
 # Hyperparameters used for the model, IS_CALTECH toggles usage of dataset
 IMAGE_DIM = 150
 NUM_CLASSES = 6
-BATCH_SIZE = 32
-NUM_EPOCHS = 4
+BATCH_SIZE = 64
+NUM_EPOCHS = 10
 IS_CALTECH = 0
+IS_ALEX = 1
+
+def make_alexnet():
+    return tf.keras.models.Sequential([
+                    tf.keras.layers.experimental.preprocessing.Resizing(227, 227),         
+                    tf.keras.layers.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu', input_shape=(227,227,3)),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
+                    tf.keras.layers.Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), activation='relu', padding="same"),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
+                    tf.keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.Conv2D(filters=384, kernel_size=(1,1), strides=(1,1), activation='relu', padding="same"),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.Conv2D(filters=256, kernel_size=(1,1), strides=(1,1), activation='relu', padding="same"),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
+                    tf.keras.layers.Flatten(),
+                    tf.keras.layers.Dense(4096, activation='relu'),
+                    tf.keras.layers.Dropout(0.5),
+                    tf.keras.layers.Dense(4096, activation='relu'),
+                    tf.keras.layers.Dropout(0.5),
+                    tf.keras.layers.Dense(10, activation='softmax')
+            ])
 
 # Prepare a directory to store all the checkpoints.
 checkpoint_dir = './ckpt'
@@ -29,10 +54,14 @@ def make_model(num_classes):
     to our inputs.
 
     """
+    if IS_ALEX:
+        submodel = make_alexnet()
+    else:
+        submodel = SqueezeNet(num_classes)
     model = tf.keras.Sequential([
         tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
         tf.keras.layers.experimental.preprocessing.RandomRotation(0.3),
-        SqueezeNet(num_classes)
+        submodel
         ])
 
     model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
