@@ -146,19 +146,13 @@ def main():
             filepath=checkpoint_dir + '/ckpt-loss={loss:.2f}',
             period = 2),
     ]
-    #if IS_CALTECH:
-    #    model.fit(train_data, epochs=NUM_EPOCHS, callbacks=my_callbacks)
-    #else:
-    #    model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
+    
     model.fit(train_data, epochs=NUM_EPOCHS, validation_data=test_data, callbacks=my_callbacks)
 
     # Prune model:
     print("-" * 30)
     print("[+] Start Pruning")
-    #if IS_CALTECH:
-    #    model = prune_model(model, train_data)
-    #else:
-    #    model = prune_model(model, train_data, test_data)
+    
     model = prune_model(model, train_data, test_data)
 
     # Pre-quanitzation. Fill in parameters to increase accuracy.
