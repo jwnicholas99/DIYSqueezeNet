@@ -9,7 +9,11 @@ class SqueezeNet(tf.keras.Model):
     def __init__(self, num_classes):
         """
         This is the function for initializing the hyperparameters and structure
-        of the SqueezeNet model.
+        of the SqueezeNet model. We implement the SqueezeNet 1.1 version here
+        due to reduced computation as well as increased accuracy. The main 
+        difference to the original architecture is the filter size of 3x3 vs. 
+        7x7 in the original for the first convolutional layer and removing the 
+        bypasses.
         :param num_classes: number of classes for images
         """
         super(SqueezeNet, self).__init__()
@@ -53,6 +57,11 @@ class SqueezeNet(tf.keras.Model):
         self.softmax = keras.layers.Activation('softmax')
 
     def call(self, inputs):
+        """
+        Calls all the layers in the architecture and takes the softmax of the 
+        result, giving the probabilities of the classes.
+
+        """
         conv1 = self.conv1(inputs)
         maxpool1 = self.maxpool1(conv1)
 
@@ -76,6 +85,12 @@ class SqueezeNet(tf.keras.Model):
         return probs
     
     def wrap_layer_pruning(self):
+        """
+        Prune wrap each layer manually, depending on whether it is just a layer
+        or if it is a FireLayer. Only prune wrap layers that have optimizable 
+        weights.
+
+        """
         self.conv1 = tfmot.sparsity.keras.prune_low_magnitude(self.conv1)
 
         self.fire2.wrap_layer_pruning()
@@ -92,6 +107,11 @@ class SqueezeNet(tf.keras.Model):
         self.conv13 = tfmot.sparsity.keras.prune_low_magnitude(self.conv13)
         
     def strip_pruning_wrapping(self, layer):
+        """
+        Helper function to remove wrapping for each layer and return its values
+        after it has been wrapped in the above function.
+
+        """
         if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
             # The _batch_input_shape attribute in the first layer makes a Sequential
             # model to be built. This makes sure that when we remove the wrapper from
@@ -104,6 +124,11 @@ class SqueezeNet(tf.keras.Model):
             return layer
         
     def strip_model_prune(self):
+        """
+        Calls the strip pruning wrapping helper function when appropriate or 
+        uses the layer's class method.
+
+        """
         self.conv1 = self.strip_pruning_wrapping(self.conv1)
 
         self.fire2.strip_model_prune()
@@ -120,6 +145,10 @@ class SqueezeNet(tf.keras.Model):
         self.conv13 = self.strip_pruning_wrapping(self.conv13)
         
     def quantize_submodels(self):
+        """
+        Quantizing model layers when needed
+
+        """
         quantize_model = tfmot.quantization.keras.quantize_model
         self.fire2 = quantize_model(self.fire2)
         self.fire3 = quantize_model(self.fire3)

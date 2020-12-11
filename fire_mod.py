@@ -12,7 +12,8 @@ class FireLayer(tf.keras.Model):
         Note that there are two types of expansion - 1x1 and 3x3 kernel,
         so we will concatenate the outputs of both types of expansion 
         depth-wise. This means that the number of output filters for eac
-        fire module is expand_filters * 2.
+        fire module is expand_filters * 2. Inherits tf.keras.Model because
+        
         """
         super(FireLayer, self).__init__()
 
@@ -38,6 +39,13 @@ class FireLayer(tf.keras.Model):
         self.concat = keras.layers.Concatenate(axis=-1)
 
     def call(self, inputs):
+        """
+        :param inputs: FireLayer inputs
+
+        Squeeze inputs, then return concatenated outputs of the two expand
+        layers.        
+
+        """
         squeeze = self.squeeze(inputs)
         expand_1x1 = self.expand_1x1(squeeze)
         expand_3x3 = self.expand_3x3(squeeze)
@@ -46,11 +54,21 @@ class FireLayer(tf.keras.Model):
         return concat
     
     def wrap_layer_pruning(self):
+        """
+        Manual pruning of individual sublayers of the FireLayer as a helper
+        function to be called by the model call.
+        
+        """
         self.squeeze = tfmot.sparsity.keras.prune_low_magnitude(self.squeeze)
         self.expand_1x1 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_1x1)
         self.expand_3x3 = tfmot.sparsity.keras.prune_low_magnitude(self.expand_3x3)
         
     def strip_pruning_wrapping(self, layer):
+        """
+        Helper function to remove the pruning wrapper to extract the pruned 
+        layer to replace the unpruned layer.
+
+        """
         if isinstance(layer, pruning_wrapper.PruneLowMagnitude):
             if not hasattr(layer.layer, '_batch_input_shape') and hasattr(
                     layer, '_batch_input_shape'):
@@ -61,6 +79,11 @@ class FireLayer(tf.keras.Model):
             return layer
     
     def strip_model_prune(self):
+        """
+        Strips layers in FireLayer for each layer in FireLayer using the above
+        helper function.
+
+        """
         self.squeeze = self.strip_pruning_wrapping(self.squeeze)
         self.expand_1x1 = self.strip_pruning_wrapping(self.expand_1x1)
         self.expand_3x3 = self.strip_pruning_wrapping(self.expand_3x3)

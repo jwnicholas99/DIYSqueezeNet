@@ -8,6 +8,18 @@ import tensorflow_model_optimization as tfmot
 from model import SqueezeNet
 
 def load_model(args):
+    """
+    :param args: Takes in filepath of network weights, filepath to save network
+    weights, filepath to save pruned weights,filepath to save to pruned network,
+    filepath to save zip model.
+
+    return model: Returns properly loaded model
+    
+    Recreates model using the loaded model from the filepath for saved weights.
+    Build and compile the model and then return it as a SqueezeNet type model.
+    
+
+    """
     model = tf.keras.models.load_model(args['filepath'])
     squeezenet = model.get_layer(index=2)
     squeezenet.save_weights("saved_weights")
@@ -35,6 +47,19 @@ def get_gzipped_model_size(model):
     return os.path.getsize(zipped_file)
 
 def prune_model(model, train_data, test_data=None):
+    """
+    :param model: loaded SqueezeNet model
+    :param train_data: tf.data.Dataset train data
+    :param test_data: tf.data.Dataset test data
+
+    :return model: Pruned weights SqueezeNet model
+    
+    Takes in the SqueezeNet model, looks at the third layer which is the model 
+    layer, and then uses the class method to wrap the layers for pruning. We 
+    then unwrap the model and rebuild it with its previous preprocessing layers
+    and then return it.
+
+    """
     # pruning hyperparams
     num_epochs = 1
     BATCH_SIZE = 32
@@ -62,7 +87,7 @@ def prune_model(model, train_data, test_data=None):
         tfmot.sparsity.keras.UpdatePruningStep(),
     ]
     if test_data is None:
-        model.fit(train_data, epochs=NUM_EPOCHS, validation_split=0.1, callbacks=my_callbacks)
+        model.fit(train_data, epochs=num_epochs, validation_split=0.1, callbacks=my_callbacks)
     else:
         model.fit(train_data, epochs=num_epochs, validation_data=test_data, callbacks=my_callbacks)
 
@@ -72,6 +97,16 @@ def prune_model(model, train_data, test_data=None):
     return model
 
 def export_model(model, args):
+    """
+    :param model: SqueezeNet model
+    :param args: Takes in filepath of network weights, filepath to save network
+    weights, filepath to save pruned weights,filepath to save to pruned network,
+    filepath to save zip model.
+    
+    Saves model weights and then zips it to compress using the filepaths
+    inputted.
+
+"""
     squeezenet = model.get_layer(index=2)
     squeezenet.strip_model_prune()
     squeezenet.summary()

@@ -9,6 +9,7 @@ from huffman_opt import encode, decode, compare_encoding_size
 from model import SqueezeNet
 import pathlib
 
+# Hyperparameters used for the model, IS_CALTECH toggles usage of dataset
 IMAGE_DIM = 150
 NUM_CLASSES = 6
 BATCH_SIZE = 32
@@ -21,6 +22,13 @@ if not os.path.exists(checkpoint_dir):
     os.makedirs(checkpoint_dir)
 
 def make_model(num_classes):
+    """
+    :param num_classes: Number of labelling classes in the dataset
+    :return model: Returns SqueezeNet model
+    Makes the model with two initial preprocessing layers to add variability 
+    to our inputs.
+
+    """
     model = tf.keras.Sequential([
         tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
         tf.keras.layers.experimental.preprocessing.RandomRotation(0.3),
@@ -34,6 +42,12 @@ def make_model(num_classes):
     return model
 
 def make_or_restore_model(num_classes):
+    """
+    :param num_classes: Number of labelling classes in the dataset
+    Allows us to either take an old checkpoint if any are saved or make a new
+    model if none exists, then return whichever applies.
+    
+    """
     # Either restore the latest model, or create a fresh one
     # if there is no checkpoint available.
     checkpoints = [checkpoint_dir + '/' + name
@@ -46,6 +60,13 @@ def make_or_restore_model(num_classes):
     return make_model(num_classes)
 
 def load_intel6():
+    """
+    Returns train and test data in the form of a tf.data.Dataset. We take the
+    the two folders and use the preprocessing builtin functions to make the 
+    dataset. We prefetch using the cache for speedup. This is for Intel 6,
+    with 6 classes.
+    
+    """
     train_data_dir = pathlib.Path('intel6/seg_train')
     test_data_dir = pathlib.Path('intel6/seg_test')
     
@@ -69,6 +90,13 @@ def load_intel6():
     return train_data, test_data
 
 def load_caltech256():
+    """
+    Returns train and test data in the form of a tf.data.Dataset. We take the
+    the two folders and use the preprocessing builtin functions to make the 
+    dataset. We prefetch using the cache for speedup. This is for Caltech 257,
+    with 6 classes.
+    
+    """
     train_data_dir = pathlib.Path('256_ObjectCategories')
     
     train_data = tf.keras.preprocessing.image_dataset_from_directory(
@@ -93,6 +121,13 @@ def load_caltech256():
     return train_data, test_data
 
 def main():
+    """
+    Load dataset into train_data and test_data. Then we make our model, then 
+    start training with callbacks for every two epochs. We fit the model, and 
+    then use our improvements and implementations for pruning, quantization, 
+    and huffman coding.
+    
+    """
     # Load dataset:
     print("-" * 30)
     print("[+] Start Loading Dataset")
