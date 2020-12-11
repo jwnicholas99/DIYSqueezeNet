@@ -1,4 +1,5 @@
 **DIY SqueezeNet**
+
 Overview:
 This project contains a successfully implemented base model of SqueezeNet 1.1 
 using the Intel Image Classification dataset and Caltech 257 dataset as 
@@ -49,4 +50,8 @@ find the value manually but it doesn't currently reflect that in the code.
 Also, full quantization doesn't work with our inheritance architecture of submodels
 of FireLayers in models so we have an implementation of it that does represent 
 the compression that it provides, but it may affect the accuracy of the model
-after it has been quantized.
+after it has been quantized. Currently, our model does run on Caltech 257 but 
+the dataset is unbalanced and has quite low training examples so training has been 
+really unstable and not reliable enough to show as a final result. Thus, we are 
+currently not supporting Caltech 257 and our results are based on Intel Image 
+Classification.
