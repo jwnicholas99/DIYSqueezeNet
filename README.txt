@@ -1,0 +1,52 @@
+README:
+Overview:
+This project contains a successfully implemented base model of SqueezeNet 1.1 
+using the Intel Image Classification dataset and Caltech 257 dataset as 
+implemented preprocessing functions. It also contains functions for three 
+added compression techniques: pruning, quantization, and huffman coding in 
+three separate files that are manually made for our SqueezeNet implementation 
+in many cases.
+
+The run.py file instantiates a model based on set hyperparameters, which 
+includes a choice for datasets from Intel to Caltech. Using a sequential
+Keras model, it instantiates a SqueezeNet model and trains it for the user 
+set number of epochs and saves checkpoints as well. After, it runs our three 
+optimizations and ultimately, the compressed model can be saved locally.
+
+The baseline model implementation is contained in the two files model.py, 
+fire_mod.py. model.py contains the SqueezeNet class which has the general 
+architecture of the model, composed of convolution, FireLayers, maxpooling,
+and average pooling. It has the call function for training the model as well as
+prune utility functions to wrap and unwrap the individual layers in the model.
+The FireLayer is a tf.keras.Model that represents the FireLayer described in 
+the paper, that has a squeeze layer and returns the output of the concatenation
+of two expand layers with different sized kernels. We need to use tf.keras.Model
+instead of as a layer because Keras can't examine layers within layers, so 
+our implementation requires this sort of inheritance architecture. FireLayer 
+also has pruning helper methods to prune its layers within, and is called by
+the pruning functions in the SqueezeNet class.
+
+The three other files contain our compression implementations. pruning.py 
+contains two helper methods, load_model and export_model to load in SqueezeNet
+weights that have been saved into a SqueezeNet model, and exporting a model into
+a zipped file locally. We then have a pruning method that prunes a SqueezeNet 
+and creates a new SqueezeNet model with pruned weights.
+
+quantization.py contains a pre_quantize method to make the model quantization 
+aware, and retrain it, as well as a save_model and load_model utility function.
+A display_diff method is provided to compare the size of an original SqueezeNet
+model and our retrained quantized SqueezeNet model. There are also demo methods
+to see more quickly on an MNIST model to see if it works.
+
+huffman_opt has three methods using the da_huffman library for encoding and
+decoding models. It provides an encoding size which doesn't include the codec 
+size but shows how much compression can be used on this level and
+this representation of the weights.
+
+Bugs:
+Huffman encoding doesn't describe the size of the codec as of yet and we can 
+find the value manually but it doesn't currently reflect that in the code.
+Also, full quantization doesn't work with our inheritance architecture of submodels
+of FireLayers in models so we have an implementation of it that does represent 
+the compression that it provides, but it may affect the accuracy of the model
+after it has been quantized.

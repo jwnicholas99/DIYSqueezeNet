@@ -31,15 +31,20 @@ def compare_encoding_size(code, weights):
     for dim in weights.shape:
         weights_size *= dim 
     code_size = len(code) 
-    print("Weights tensor: {} bits. Code: {} bits.".format(weights_size, code_size), flush=True) 
+    print("Weights tensor: {} bits. Code: {} bits.".format(weights_size, code_size),
+          flush=True) 
 
 # Test Demo
 def demo():
     print("-" * 30)
 
     # Test weights
-    test_weights = tf.Variable(tf.random.truncated_normal([500, 500], stddev=.1, dtype=tf.float32))
-    print("Testing on tensor of size {} x {}.".format(test_weights.shape[0], test_weights.shape[1]), flush=True)
+    test_weights = tf.Variable(tf.random.truncated_normal([500, 500],
+                                                          stddev=.1,
+                                                          dtype=tf.float32))
+    print("Testing on tensor of size {} x {}.".format(test_weights.shape[0],
+                                                      test_weights.shape[1]),
+                                                      flush=True)
 
     # Syntax for encoding
     print("Encoding...", flush=True)
@@ -49,7 +54,8 @@ def demo():
     # Syntax for decoding
     print("Decoding...", flush=True)
     output_weights = decode(code, codec, shape=test_weights.shape)
-    print("Successfully decoded tensor into tensor of shape {} x {}.".format(output_weights.shape[0], output_weights.shape[1]), flush=True)
+    print("Successfully decoded tensor into tensor of shape {} x {}.".format(
+        output_weights.shape[0], output_weights.shape[1]), flush=True)
 
     # Making sure the encode and decode did not alter tensor
     equality_check = np.all(np.equal(test_weights, output_weights))
