@@ -17,20 +17,7 @@ class SqueezeNet(tf.keras.Model):
         :param num_classes: number of classes for images
         """
         super(SqueezeNet, self).__init__()
-
-        # MOVING HYPERPARAMETERS INTO RUN.PY:
-        # self.batch_size = 32
-        # self.num_classes = num_classes
-        # start_learning_rate = 0.04
-        # end_learning_rate = 0.00001
-        #num_steps = 10000
-        #self.learning_rate_fn = keras.optimizers.schedules.PolynomialDecay(start_learning_rate,
-                                                                      #10000,
-                                                                      #end_learning_rate,
-                                                                      #power=1.0)
-        #self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate_fn)
-
-        # Initialize learnable parameters
+        
         self.conv1 = keras.layers.Convolution2D(64, (3,3), activation='relu',
                                                 kernel_initializer='glorot_uniform',
                                                 strides=(2,2), padding='same')
